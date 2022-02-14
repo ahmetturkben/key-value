@@ -1,0 +1,4 @@
+mongo:
+  URI: mongodb+srv://challengeUser:WUMglwNBaydH8Yvu@challenge-xzwqd.mongodb.net/getircase-study?retryWrites=true
+  Database: getir-case-study
+  Collection: records
