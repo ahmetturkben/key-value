@@ -41,9 +41,9 @@ func main() {
 	app.Get("/swagger/*", swagger.HandlerDefault)
 	app.Get("/api/record/healthcheck", HealthCheck)
 	_configurationRouter.MemoryRouter(app, memoryHandler)
-
-	go syncFile(memoryRepo, fileRepo)
-	//time.Sleep(time.Second * 7)
+	
+	syncFile(memoryRepo, fileRepo)
+	//time.Sleep(time.Second * 0)
 
 	//port := ":" + os.Getenv("PORT")
 	if err := app.Listen(":80"); err != nil {
@@ -65,15 +65,26 @@ func syncFile(repository domain.MemoryRepository, fileRepo domain.FileRepository
 		fmt.Println(err)
 	}
 
-	for range time.Tick(time.Second * 1) {
-		data, err := repository.GetAll()
-		if err != nil {
-			return
+	var wg sync.WaitGroup
+	go func() {
+		for range time.Tick(time.Second * 1) {
+			wg.Add(1)
+			fmt.Printf("Worker %d starting\n", time.Second)
+
+			data, err := repository.GetAll()
+			if err != nil {
+				return
+			}
+			dbJson, _ := json.Marshal(data)
+			fileRepo.Write(dbJson)
+
+			wg.Done()
+			fmt.Printf("Worker %d done\n", time.Second)
 		}
-		dbJson, _ := json.Marshal(data)
-		fileRepo.Write(dbJson)
-		fmt.Println("Foo" + time.Second.String())
-	}
+	}()
+
+	wg.Wait()
+	fmt.Printf("Worker %d wait\n", time.Second)
 }
 
 func HealthCheck(c *fiber.Ctx) error {
